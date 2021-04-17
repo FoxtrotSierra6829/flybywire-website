@@ -1,7 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { GitVersions } from '@flybywiresim/api-client';
 import { Button } from '../../Button';
 
 export const Download: React.FC = () => {
+    const info = {
+        stable: {
+            version: '',
+            date: new Date(),
+        },
+        dev: {
+            version: '',
+            date: new Date(),
+        },
+        experimental: {
+            version: '',
+            date: new Date(),
+        },
+    };
+
+    const [releaseInfo, setInfo] = useState(info); // initialize state
+
     const urls = {
         stable: 'https://flybywiresim-packages.b-cdn.net/stable/A32NX-stable.zip',
         dev: 'https://flybywiresim-packages.b-cdn.net/vmaster/A32NX-master.zip',
@@ -9,6 +27,30 @@ export const Download: React.FC = () => {
     };
 
     const getDownloadLink = (link: string) => `https://api.flybywiresim.com/api/v1/download?url=${link}`;
+
+    const getReleaseInfo = async () => {
+        GitVersions.getReleases('flybywiresim', 'a32nx')
+            .then((releases) => {
+                setInfo({
+                    ...releaseInfo,
+                    stable: {
+                        version: releases[0].name,
+                        date: releases[0].publishedAt,
+                    },
+                });
+            });
+        GitVersions.getNewestCommit('flybywiresim', 'a32nx', 'experimental')
+            .then((commit) => {
+                setInfo({
+                    ...releaseInfo,
+                    experimental: {
+                        version: commit.sha.substring(0, 7),
+                        date: commit.timestamp,
+                    },
+                });
+            });
+    };
+    getReleaseInfo();
 
     return (
         <section id="download" className="relative bg-blue-dark-contrast">
@@ -53,7 +95,10 @@ export const Download: React.FC = () => {
 
                             <div className="divide-y divide-gray-700">
                                 <div className="flex flex-row justify-between items-center mb-5">
-                                    <span className="text-xl text-gray-300">Stable Release</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-xl text-gray-300">Stable Release</span>
+                                        <span className="text-xl text-gray-300">{releaseInfo.stable.version}</span>
+                                    </div>
                                     <a href={getDownloadLink(urls.stable)}>
                                         <Button className="w-40 float-right bg-green-500 hover:bg-green-700 font-bold">Download</Button>
                                     </a>
